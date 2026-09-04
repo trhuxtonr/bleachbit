@@ -430,3 +430,17 @@ class CleanerMLTestCase(common.BleachbitTestCase):
         self.run_all(xmlc, True)
         self.assertNotExists(test_log_path_a)
         self.assertNotExists(test_log_path_b)
+
+
+    def test_safari_history_has_icloud_sync_warning(self):
+        """Safari's history option must warn the user that iCloud Sync,
+        if enabled, can re-sync deleted history from another Apple
+        device -- confirmed by hand: enabling Safari's iCloud Sync,
+        clearing History.db locally, and observing the history
+        reappear shortly after (re-populated from another
+        signed-in device), not because the cleaner itself failed."""
+        list(load_cleaners())
+        safari = Cleaner.backends['safari']
+        warning = safari.get_warning('history')
+        self.assertIsNotNone(warning)
+        self.assertIn('iCloud', warning)

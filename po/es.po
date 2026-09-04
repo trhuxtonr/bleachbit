@@ -69,6 +69,18 @@ msgstr ""
 msgid "History"
 msgstr "Historial"
 
+#: ../cleaners/safari.xml
+msgid "Delete the history of visited sites"
+msgstr "Elimina el historial de sitios visitados"
+
+#: ../cleaners/safari.xml
+msgid ""
+"If iCloud Sync is enabled for Safari, history deleted here may be "
+"re-synced from another Apple device signed in to the same iCloud "
+"account; disable Safari in iCloud settings first to prevent this"
+msgstr ""
+"Si la sincronización de iCloud está activada para Safari, el historial borrado aquí puede volver a sincronizarse desde otro dispositivo Apple con la misma cuenta de iCloud; desactiva Safari en los ajustes de iCloud primero para evitarlo"
+
 #: ../cleaners/realplayer.xml ../cleaners/easytag.xml ../cleaners/filezilla.xml
 #: ../cleaners/gnome.xml ../cleaners/windows_defender.xml
 #: ../cleaners/nautilus.xml ../cleaners/links2.xml ../cleaners/d4x.xml

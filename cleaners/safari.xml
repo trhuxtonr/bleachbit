@@ -27,6 +27,7 @@ later.  See the COPYING file in the top-level directory.
   <option id="history">
     <label>History</label>
     <description>Delete the history of visited sites</description>
+    <warning>If iCloud Sync is enabled for Safari, history deleted here may be re-synced from another Apple device signed in to the same iCloud account; disable Safari in iCloud settings first to prevent this</warning>
     <action command="delete" search="file" path="~/Library/Safari/History.db"/>
     <action command="delete" search="file" path="~/Library/Safari/History.db-wal"/>
     <action command="delete" search="file" path="~/Library/Safari/History.db-shm"/>
