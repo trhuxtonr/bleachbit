@@ -147,6 +147,9 @@ def reject_xml_dtd(data, description='XML'):
         if has_internal_subset:
             raise ValueError(
                 f'DTD with an internal subset is not allowed in {description}')
+    if isinstance(data, str):
+        # pyexpat rejects str input carrying an encoding declaration
+        data = data.encode('utf-8')
     parser = xml.parsers.expat.ParserCreate()
     parser.StartDoctypeDeclHandler = on_doctype
     parser.Parse(data, True)
@@ -440,7 +443,8 @@ def run_external(args, stdout=None, env=None, clean_env=True, timeout=None, wait
         # https://github.com/bleachbit/bleachbit/issues/168
         # dconf reset requires DISPLAY
         # https://github.com/bleachbit/bleachbit/issues/1096
-        keep_env = ('PATH', 'HOME', 'LD_LIBRARY_PATH', 'TMPDIR',
+        # LD_LIBRARY_PATH is dropped by sanitize_root_env() below when root
+        keep_env = ('PATH', 'HOME', 'TMPDIR',
                     'BLEACHBIT_TEST_OPTIONS_DIR', 'DISPLAY', 'DBUS_SESSION_BUS_ADDRESS')
         env = {key: value for key, value in os.environ.items()
                if key in keep_env}
