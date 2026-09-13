@@ -739,6 +739,39 @@ class GUI(InfoBarMixin, Gtk.ApplicationWindow):
                 self.textbuffer.get_insert())
         self.set_sensitive(True)
 
+        # EXPERIMENTAL, local-testing only -- not part of any PR yet.
+        # Offer to retry, with macOS's native per-action privilege
+        # elevation (the same mechanism apps like OnyX use), any
+        # deletes that failed due to a permission error (e.g. a file
+        # owned by another user because it was installed by an app's
+        # own updater running with elevated privileges).
+        if really_delete and IS_MAC and worker.access_denied_paths:
+            from bleachbit.Mac import delete_with_admin_privileges
+            # TRANSLATORS: Asks whether to retry, with administrator
+            # privileges, deleting files that failed due to a
+            # permission error.
+            msg = _(
+                "Some files could not be deleted due to permission "
+                "errors. They may belong to another user. Retry with "
+                "administrator privileges?")
+            resp = GuiBasic.message_dialog(
+                self, msg, Gtk.MessageType.QUESTION, Gtk.ButtonsType.YES_NO)
+            if resp == Gtk.ResponseType.YES:
+                if delete_with_admin_privileges(worker.access_denied_paths):
+                    # TRANSLATORS: Shown after successfully deleting
+                    # files with elevated privileges.
+                    GuiBasic.message_dialog(
+                        self, _("Files deleted successfully."),
+                        Gtk.MessageType.INFO, Gtk.ButtonsType.OK)
+                    self.refresh_operations = True
+                else:
+                    # TRANSLATORS: Shown when the elevated deletion
+                    # failed or was canceled by the user.
+                    GuiBasic.message_dialog(
+                        self, _("The elevated deletion failed or was "
+                                "canceled."),
+                        Gtk.MessageType.ERROR, Gtk.ButtonsType.OK)
+
         # Close the program after cleaning is completed.
         # if the option is selected under preference.
 

@@ -78,6 +78,11 @@ class Worker:
         # extra hint line in the final summary, without
         # changing the per-file 'Access denied: %s' message.
         self.total_access_denied_errors = 0
+        # The actual paths behind total_access_denied_errors
+        # above, so a caller (e.g. the GUI) can offer to retry
+        # deleting just these specific paths with elevated
+        # privileges, instead of only showing a count.
+        self.access_denied_paths = []
         self.total_special = 0  # special operations
         self.yield_time = None
         self.is_aborted = False
@@ -143,6 +148,8 @@ class Worker:
                 else:
                     logger.error(_("Access denied: %s"), e.filename)
                     self.total_access_denied_errors += 1
+                    if e.filename:
+                        self.access_denied_paths.append(e.filename)
             elif (e.__class__.__module__ == 'sqlite3'
                   and e.__class__.__name__ == 'OperationalError'
                   and str(e).startswith('database is locked')):
