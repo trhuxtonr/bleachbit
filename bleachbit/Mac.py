@@ -59,6 +59,7 @@ MACOSX_DICT_MODERN = {
     '14': 'Sonoma',
     '15': 'Sequoia',
     '26': 'Tahoe',
+    '27': 'Golden Gate',
 }
 
 
