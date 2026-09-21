@@ -22,6 +22,7 @@ if IS_MAC:
         delete_safari_cookies,
         delete_with_admin_privileges,
         get_macos_locale,
+        _get_apple_locale_via_defaults,
         is_full_disk_access_enabled,
         is_safari_binarycookies,
         list_safari_cookies,
@@ -128,6 +129,38 @@ class MacTestCase(common.BleachbitTestCase):
             "osascript must not inherit any DYLD_* variable: %r" % env_passed)
 
     @common.skipUnlessMac
+    def test_get_apple_locale_via_defaults_strips_dyld_env(self):
+        """_get_apple_locale_via_defaults() must not let `defaults`
+        inherit DYLD_LIBRARY_PATH (or any other DYLD_* variable) from
+        BleachBit's own process environment -- the same
+        code-signing-check-triggered SIGKILL already found and fixed
+        for osascript elsewhere. Confirmed by hand on a Mac mini M1
+        (Apple Silicon), isolated from BleachBit entirely: `defaults
+        read -g AppleLocale` alone, with DYLD_LIBRARY_PATH set to a
+        real BleachBit.app's Contents/Frameworks/lib, reliably killed
+        the process (exit 137); the identical command with no DYLD_*
+        set succeeded normally. Reproduced on both macOS Tahoe 26.6.2
+        and macOS 27.0 on this machine -- never observed on a Mac mini
+        M4 with the identical app bundle."""
+        proc_mock = mock.Mock()
+        proc_mock.returncode = 0
+        proc_mock.stdout = 'es_ES\n'
+        polluted_env = dict(os.environ)
+        polluted_env['DYLD_LIBRARY_PATH'] = \
+            '/Applications/BleachBit.app/Contents/Frameworks/lib'
+        with mock.patch.dict(os.environ, polluted_env, clear=True):
+            with mock.patch('subprocess.run', return_value=proc_mock) as mock_run:
+                result = _get_apple_locale_via_defaults()
+
+        self.assertEqual(result, 'es_ES')
+        self.assertEqual(mock_run.call_count, 1)
+        env_passed = mock_run.call_args.kwargs.get('env')
+        self.assertIsNotNone(
+            env_passed, "defaults must be given an explicit env kwarg")
+        self.assertFalse(
+            any(k.startswith('DYLD_') for k in env_passed),
+            "defaults must not inherit any DYLD_* variable: %r" % env_passed)
+
     def test_delete_with_admin_privileges_rejects_disallowed_path(self):
         """Refuses to elevate deletion of a path outside the
         orphaned-app-version pattern, without ever invoking osascript."""
