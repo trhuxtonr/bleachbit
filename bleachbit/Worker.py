@@ -375,9 +375,9 @@ class Worker:
             # installed by an app's own updater running with
             # elevated privileges).
             line = _("Some files could not be accessed due to "
-                    "permission errors. If they belong to "
-                    "another user, try running BleachBit with "
-                    "administrator privileges.")
+                     "permission errors. If they belong to "
+                     "another user, try running BleachBit with "
+                     "administrator privileges.")
             self.ui.append_text("\n%s" % line, 'error')
         self.ui.append_text('\n')
 
