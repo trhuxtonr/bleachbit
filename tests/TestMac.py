@@ -17,20 +17,19 @@ from unittest import mock
 
 from tests import common
 from bleachbit import IS_MAC
-if IS_MAC:
-    from bleachbit.Mac import (
-        delete_safari_cookies,
-        delete_with_admin_privileges,
-        get_macos_locale,
-        _get_apple_locale_via_defaults,
-        is_full_disk_access_enabled,
-        is_safari_binarycookies,
-        list_safari_cookies,
-        notify_macos,
-        _read_safari_cookie_records,
-        _serialize_safari_cookie_records,
-        _write_safari_cookie_records,
-    )
+from bleachbit.Mac import (
+    delete_safari_cookies,
+    delete_with_admin_privileges,
+    _get_apple_locale_via_defaults,
+    get_macos_locale,
+    is_full_disk_access_enabled,
+    is_safari_binarycookies,
+    list_safari_cookies,
+    notify_macos,
+    _read_safari_cookie_records,
+    _serialize_safari_cookie_records,
+    _write_safari_cookie_records,
+)
 
 
 class MacTestCase(common.BleachbitTestCase):
