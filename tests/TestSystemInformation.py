@@ -66,7 +66,7 @@ class SystemInformationTestCase(common.BleachbitTestCase):
         MACOSX_DICT_MODERN the same day, which would have silently
         turned this into a no-longer-unknown-codename case had the
         version stayed hardcoded to '27.0')."""
-        with mock.patch('platform.mac_ver', return_value=('99.0', ('', '', ''), '')),                 mock.patch('bleachbit.SystemInformation.IS_MAC', True),                 mock.patch('bleachbit.SystemInformation.IS_LINUX', False):
+        with mock.patch('platform.mac_ver', return_value=('99.0', ('', '', ''), '')), mock.patch('bleachbit.SystemInformation.IS_MAC', True), mock.patch('bleachbit.SystemInformation.IS_LINUX', False):
             ret = get_system_information()
         self.assertIn('platform.mac_ver() = 99.0', ret)
 
