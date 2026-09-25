@@ -776,6 +776,22 @@ _ELEVATED_DELETE_ALLOWED_PATH_RE = re.compile(
     r'[^/]+\.framework/Versions/[^/]+)(/.*)?$')
 
 
+def elevated_delete_paths_eligible(paths):
+    """Return whether every path in paths matches
+    _ELEVATED_DELETE_ALLOWED_PATH_RE, i.e. whether
+    delete_with_admin_privileges() would actually accept them.
+
+    Lets a caller (e.g. the GUI) decide whether to offer the
+    elevated-retry prompt at all, instead of only finding out it was
+    never going to work after the user has already said yes.
+    """
+    if not paths:
+        return True
+    return all(
+        path and _ELEVATED_DELETE_ALLOWED_PATH_RE.match(path)
+        for path in paths)
+
+
 def delete_with_admin_privileges(paths):
     """Delete the given files/directories using macOS's native
     per-action privilege-elevation prompt (osascript's 'do shell
