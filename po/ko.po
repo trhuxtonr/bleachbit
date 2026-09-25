@@ -894,7 +894,7 @@ msgstr "파일 압축기"
 msgid "Known files history"
 msgstr "알려진 파일 기록"
 
-#. http://wiki.amule.org/wiki/Friend
+#. https://wiki.amule.org/wiki/Friend
 #: ../cleaners/amule.xml
 msgid "Known clients and friends"
 msgstr "알려진 클라이언트 및 친구"
@@ -1061,7 +1061,7 @@ msgstr ""
 #: windows/NsisInclude/NsisMultiUserLang.nsh
 msgctxt "nsis:MULTIUSER_INSTALL_PAGE_SUBTITLE"
 msgid "Choose for which users to install $(^NameDA)."
-msgstr "설치할 사용자 ($^NameDA)를 선택합니다."
+msgstr "설치할 사용자 ($(^NameDA))를 선택합니다."
 
 #: windows/NsisInclude/NsisMultiUserLang.nsh
 msgctxt "nsis:MULTIUSER_INVALID_PARAMS"
@@ -1136,7 +1136,7 @@ msgstr ""
 #: windows/NsisInclude/NsisMultiUserLang.nsh
 msgctxt "nsis:MULTIUSER_UNINSTALL_PAGE_SUBTITLE"
 msgid "Choose for which users to remove $(^NameDA)."
-msgstr "제거할 사용자 ($^NameDA)를 선택합니다."
+msgstr "제거할 사용자 ($(^NameDA))를 선택합니다."
 
 #. TRANSLATORS: Dialog shown when the installer detects an old version of Windows. Instructs the user to click OK to download a compatible version or Cancel to exit.
 #: windows/NsisInclude/NsisMultiUserLang.nsh
@@ -1362,11 +1362,11 @@ msgstr "시스템 전반"
 
 #. TRANSLATORS: desktop entries are .desktop files in Linux that
 #. make up the application menu (the menu that shows BleachBit,
-#. Firefox, and others.  The .desktop files also associate file
+#. Firefox, and others).  The .desktop files also associate file
 #. types, so clicking on an .html file in Nautilus brings up
 #. Firefox.
 #. More information:
-#. http://standards.freedesktop.org/menu-spec/latest/index.html#introduction
+#. https://specifications.freedesktop.org/menu/latest/index.html#introduction
 #: ../bleachbit/Cleaner.py
 msgid "Broken desktop files"
 msgstr "손상된 데스크톱 파일"

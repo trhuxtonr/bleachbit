@@ -15,7 +15,7 @@
 ;  GNU General Public License for more details.
 ;
 ;  You should have received a copy of the GNU General Public License
-;  along with this program.  If not, see <http://www.gnu.org/licenses/>.
+;  along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 ;  @scriptversion v3.0.1.1429
 ;  @scriptdate 2019-12-01
@@ -281,8 +281,12 @@ Caption "$(INSTALLER_CAPTION)"
   !insertmacro MUI_LANGUAGE "Indonesian"
   !insertmacro MUI_LANGUAGE "Italian"
   ; Override upstream Italian.nsh: add line break on finish page (issue #1453)
+  ; The last LangString wins; 6030 only warns about the replaced string
+  !pragma warning push
+  !pragma warning disable 6030
   LangString MUI_TEXT_FINISH_INFO_REBOOT ${LANG_ITALIAN} "Per completare l'installazione di $(^NameDA) il computer deve essere riavviato.$\r$\n$\r$\nVuoi riavviarlo ora?"
   LangString MUI_UNTEXT_FINISH_INFO_REBOOT ${LANG_ITALIAN} "Per completare la disinstallazione di $(^NameDA) il computer deve essere riavviato.$\r$\n$\r$\nVuoi riavviarlo ora?"
+  !pragma warning pop
   !insertmacro MUI_LANGUAGE "Japanese"
   !insertmacro MUI_LANGUAGE "Korean"
   !insertmacro MUI_LANGUAGE "Latvian"
@@ -318,7 +322,7 @@ ${StrCase}
 ;--------------------------------
 ;Function
 
-; http://nsis.sourceforge.net/RefreshShellIcons
+; https://nsis.sourceforge.io/RefreshShellIcons
 Function RefreshShellIcons
   !define SHCNE_ASSOCCHANGED 0x08000000
   !define SHCNF_IDLIST 0

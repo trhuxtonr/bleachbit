@@ -86,10 +86,10 @@ def get_build_settings():
 
     Presets:
       fast       - enable quick mode for PR builds
-                   * skip UPX, strip, and recompression
+                   * skip UPX, strip, and the library.zip repack
                    * set faster compression for .zip and NSIS
       regular    - default build
-                   * enables strip and 7-Zip library recompression
+                   * enables strip and the stored library.zip repack
                    * set maximum compression for .zip and NSIS
       max-effort - enable Deadpool mode for release builds
                    * build English-only installer
@@ -120,7 +120,7 @@ def get_build_settings():
         # recompress zips with advzip
         'advzip': is_max_effort and bool(os.path.exists(ADVZIP_EXE)),
         'strip': not is_fast and bool(STRIP_EXE),  # strip executables
-        'recompress_lib': not is_fast,  # recompress library.zip
+        'recompress_lib': not is_fast,  # prune and repack library.zip
     }
 
 
@@ -139,7 +139,7 @@ def recompress_with_advzip(zip_path):
                 zip_path, f'{file_size_diff:,}', f'{file_size_old:,}', f'{file_size_new:,}', t1 - t0)
 
 
-def archive(infile, outfile, settings, use_advzip=False):
+def archive(infile, outfile, settings, use_advzip=False, store=False):
     """Create an archive from a file
 
     This uses 7-Zip to create a .zip archive with the request
@@ -147,6 +147,8 @@ def archive(infile, outfile, settings, use_advzip=False):
 
     If use_advzip is enabled, then advzip recompresses the .zip
     file, which is not needed for the zipped installer.
+
+    If store is enabled, the files are not compressed.
     """
     assert_exist(infile)
     delete_file(outfile, warn_if_exists=True)
@@ -158,7 +160,9 @@ def archive(infile, outfile, settings, use_advzip=False):
     # 7-Zip Command Line Reverence Wizard: https://axelstudios.github.io/7z/#!/
     sz_opts = ['-tzip', '-mm=Deflate', '-mfb=258',
                '-mpass=7', '-bso0', '-bsp0']  # best compression
-    if settings['fast']:
+    if store:
+        sz_opts = ['-tzip', '-mm=Copy', '-bso0', '-bsp0']
+    elif settings['fast']:
         # fast compression
         sz_opts = ['-tzip', '-mx=1', '-bso0', '-bsp0']
     cmd = [SZ_EXE, 'a'] + sz_opts + [outfile, infile]
@@ -307,9 +311,7 @@ def copy_file(src, dst):
 
     The dst must be a full path.
     """
-    if not os.path.exists(src):
-        logger.warning('copy_file: %s does not exist', src)
-        return
+    assert_exist(src)
     dst_dirname = os.path.dirname(dst)
     # If the destination directory is current directory, do not create it.
     if dst_dirname and not os.path.exists(dst_dirname):
@@ -332,9 +334,7 @@ def copy_file(src, dst):
 def copy_tree(src, dst):
     """Copy a directory tree"""
     src = os.path.abspath(src)
-    if not os.path.exists(src):
-        logger.warning('copytree: %s does not exist', src)
-        return
+    assert_exist(src)
     logger.info('copying %s to %s', src, dst)
     # copytree() preserves file date
     shutil.copytree(src, dst, dirs_exist_ok=True)
@@ -476,7 +476,7 @@ def build_py2exe():
 
     options = {
         'bundle_files': 3,  # All files copied to dist directory
-        'compressed': 1,     # Create compressed archive
+        'compressed': 0,     # Stored, so imports skip inflate
         'optimize': 2,       # Extra optimization (like python -OO)
         'includes': ['gi'],
         'packages': ['charset_normalizer', 'encodings', 'gi', 'gi.overrides', 'plyer.platforms.win.notification'],
@@ -579,18 +579,17 @@ def build():
         copy_file(os.path.join(GTK_LIBDIR, exe), os.path.join('dist', exe))
 
     logger.info('Copying GTK files and icon')
-    for d in ('dbus-1', 'fonts', 'gtk-3.0', 'pango'):
+    for d in ('fonts', 'gtk-3.0'):
         path = os.path.join(GTK_DIR, 'etc', d)
         copy_tree(path, os.path.join('dist', 'etc', d))
-    for d in ('gdk-pixbuf-2.0', 'girepository-1.0', 'glade', 'gtk-3.0'):
+    for d in ('gdk-pixbuf-2.0', 'girepository-1.0'):
         path = os.path.join(GTK_DIR, 'lib', d)
         copy_tree(path, os.path.join('dist', 'lib', d))
 
     gtk_share = os.path.join(GTK_LIBDIR, 'share')
-    if os.path.exists(gtk_share):
-        for d in ('icons', 'themes'):
-            path = os.path.join(gtk_share, d)
-            copy_tree(path, os.path.join('dist', 'share', d))
+    for d in ('icons', 'themes'):
+        path = os.path.join(gtk_share, d)
+        copy_tree(path, os.path.join('dist', 'share', d))
 
     logger.info('Fixing paths in loaders.cache file')
     loaders_fn = os.path.join(
@@ -603,10 +602,6 @@ def build():
         f.write(data)
         f.truncate()
 
-    # fonts are not needed https://github.com/bleachbit/bleachbit/issues/863
-    for d in ('icons',):
-        path = os.path.join(GTK_DIR, 'share', d)
-        copy_tree(path, os.path.join('dist', 'share', d))
     schemas_dir = 'share\\glib-2.0\\schemas'
     gschemas_compiled_src = os.path.join(
         GTK_DIR, schemas_dir, 'gschemas.compiled')
@@ -669,8 +664,8 @@ def build():
         # For Python 3.10, copy vcruntime140.dll
         dll_name = 'vcruntime140.dll'
     else:
-        logger.error('Unsupported Python version. Skipping DLL copy.')
-        return
+        logger.error('Unsupported Python version')
+        sys.exit(1)
     dll_dirs = (sys.prefix, r'c:\windows\system32', r'c:\windows\SysWOW64')
     copied_dll = False
     for dll_dir in dll_dirs:
@@ -681,11 +676,16 @@ def build():
             copied_dll = True
             break
     if not copied_dll:
-        logger.warning('%s not found. Skipping copy.', dll_name)
+        logger.error('%s not found', dll_name)
+        sys.exit(1)
 
     sign_files(('dist\\bleachbit.exe', 'dist\\bleachbit_console.exe'))
 
     assert_execute_console()
+
+    # The installer runs fc-cache.exe to build the font cache
+    logger.info('Checking fc-cache.exe starts')
+    assert_execute([r'dist\fc-cache.exe', '--version'], 'fontconfig version')
 
 
 @count_size_improvement
@@ -931,14 +931,13 @@ def delete_linux_only():
             os.remove(fn)
 
 
-@count_size_improvement
-def recompress_library(settings):
-    """Recompress library.zip to reduce size"""
+def repack_library(settings):
+    """Prune library.zip and repack it stored, so imports skip inflate"""
     if not os.path.exists(SZ_EXE):
         logger.warning('%s does not exist', SZ_EXE)
         return
 
-    logger.info('Recompressing library.zip with 7-Zip')
+    logger.info('Repacking library.zip with 7-Zip')
 
     # extract library.zip
     if not os.path.exists('dist\\library'):
@@ -964,16 +963,17 @@ def recompress_library(settings):
     # remove empty directories
     remove_empty_dirs('dist\\library')
 
-    # recompress library.zip
+    # repack library.zip
     os.chdir('dist\\library')
-    archive('.', '..\\library.zip', settings, use_advzip=True)
+    archive('.', '..\\library.zip', settings, store=True)
     os.chdir('..\\..')
     file_size_new = os.path.getsize('dist\\library.zip')
-    file_size_diff = file_size_old - file_size_new
-    logger.info('Recompression of library.dll reduced size by %s from %s to %s',
-                f'{file_size_diff:,}', f'{file_size_old:,}', f'{file_size_new:,}')
+    logger.info('library.zip changed size by %s from %s to %s',
+                f'{file_size_new - file_size_old:+,}', f'{file_size_old:,}', f'{file_size_new:,}')
     shutil.rmtree('dist\\library', ignore_errors=True)
     assert_exist('dist\\library.zip')
+    # Nothing else runs the exe after library.zip is rewritten
+    assert_execute_console()
 
 
 def shrink(settings):
@@ -992,11 +992,33 @@ def shrink(settings):
     delete_linux_only()
 
     if settings['recompress_lib']:
-        recompress_library(settings)
+        repack_library(settings)
 
     # so calculate the size of the folder, as it is a goal to shrink it.
     logger.info('Final size of the dist folder: %s',
                 f'{get_dir_size("dist"):,}')
+
+
+def keep_font_cache_in_portable(portable_dir):
+    """Make fontconfig store its cache in the portable folder
+
+    fontconfig writes to the first cachedir it can create and puts the
+    folder of fontconfig-1.dll in front of a path starting with /.
+    %LOCALAPPDATA% stays as the fallback for a read-only folder.
+    """
+    fn = os.path.join(portable_dir, 'etc', 'fonts', 'fonts.conf')
+    with open(fn, encoding='utf-8', newline='') as f:
+        data = f.read()
+    anchor = '<cachedir>LOCAL_APPDATA_FONTCONFIG_CACHE</cachedir>'
+    data, count = re.subn(
+        rf'^([ \t]*)({re.escape(anchor)})(\r?\n)',
+        r'\1<cachedir>/var/cache/fontconfig</cachedir>\3\1\2\3',
+        data, count=1, flags=re.M)
+    if not count:
+        logger.error('%s not found in %s', anchor, fn)
+        sys.exit(1)
+    with open(fn, 'w', encoding='utf-8', newline='') as f:
+        f.write(data)
 
 
 def package_portable(settings):
@@ -1005,6 +1027,7 @@ def package_portable(settings):
     copy_tree('dist', 'BleachBit-Portable')
     with open("BleachBit-Portable\\BleachBit.ini", "w", encoding=SetupEncoding) as text_file:
         text_file.write("[Portable]")
+    keep_font_cache_in_portable('BleachBit-Portable')
 
     archive('BleachBit-Portable',
             f'BleachBit-{get_version()}-portable{settings["upx_tag"]}.zip',
@@ -1016,7 +1039,8 @@ def nsis(opts, exe_name, nsi_path, settings):
     if os.path.exists(exe_name):
         logger.info('Deleting old file: %s', exe_name)
         os.remove(exe_name)
-    cmd = [NSIS_EXE] + opts.split() + [
+    # /WX: treat NSIS warnings as errors
+    cmd = [NSIS_EXE, '/WX'] + opts.split() + [
         f'/DVERSION={get_version()}',
         f'/DSHRED_REGEX_KEY={SHRED_REGEX_KEY}',
         nsi_path]
